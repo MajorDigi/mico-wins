@@ -1,28 +1,32 @@
-require('dotenv').config()
-const express = require('express')
-const { createClient } = require('@supabase/supabase-js')
+import dotenv from "dotenv";
+import path from "path";
 
-const app = express()
-app.use(express.json())
+dotenv.config({
+    path: path.resolve(process.cwd(), ".env")
+});
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-)
+import express from "express";
+import microWinsRoutes from "./routes/microWins.routes.js";
+import { errorHandler } from "./middleware/error.middleware.js";
 
-app.get('/', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('micro_wins')
-      .select('*')
+const app = express();
+app.use(express.json());
 
-    if (error) throw error
-    res.json(data)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
+// Root health check route
+app.get("/", (req, res) => {
+    res.json({
+        status: "API running"
+    });
+});
 
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000')
-})
+// API routes
+app.use("/micro-wins", microWinsRoutes);
+
+// Global error handler (must be last)
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
